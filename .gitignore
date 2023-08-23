@@ -7,3 +7,6 @@
 *.log
 *.sqlite3
 mysite/__pycache__
+
+#vscode
+/.vscode

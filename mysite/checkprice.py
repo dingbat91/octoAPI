@@ -49,16 +49,17 @@ def get_full_time():
 
 # Pulls latest price from Octopus API and it's valid timing
 # includes caching from requests_cache to save extreneous API calling
-def get_price(url, times):
+def get_price(url, times, **kwargs):
     params = {"period_from": times.get("startTime"), "period_to": times.get("endTime")}
     s = requests_cache.CachedSession("datacache", expire_after=datetime.timedelta(minutes=25))
     r = s.get(url, params=params)
 
     # Data Cache Debug
-    if r.from_cache:
-        print("Data from cache")
-    else:
-        print("Data from API")
+    if "debug" in kwargs.keys():
+        if r.from_cache:
+            print("Data from cache")
+        else:
+            print("Data from API")
 
     # check for valid return
     if r.status_code == 200:
