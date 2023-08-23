@@ -1,4 +1,5 @@
 import requests
+import requests_cache
 import math
 import datetime
 
@@ -11,7 +12,6 @@ def get_time():
     now = datetime.datetime.now()
     now = now.isoformat("T", "seconds")
     now = now + "Z"
-    print(now)
     return now
 
 
@@ -26,7 +26,6 @@ def get_time_half_hour():
 
     time[2] = "00Z"
     time = ":".join(time)
-    print(time)
     return time
 
 
@@ -39,29 +38,36 @@ def get_full_time():
         newtime[1] = "30"
     else:
         newtime[1] = "00"
-        print(newtime[0])
         newtime[0] = str(int(newtime[0]) + 1)
 
     newtime = ":".join(newtime)
     newtime = time.split("T")[0] + "T" + newtime
 
     data = {"startTime": time, "endTime": newtime}
-    print(data)
     return data
 
 
 # Pulls latest price from Octopus API and it's valid timing
+# includes caching from requests_cache to save extreneous API calling
 def get_price(url, times):
     params = {"period_from": times.get("startTime"), "period_to": times.get("endTime")}
-    r = requests.get(url, params=params)
-    json = r.json()
-    print(json)
-    price: int = json["results"][0]["value_inc_vat"]
-    price: int = math.ceil(price)
-    valid_to: str = json["results"][0]["valid_to"]
-    data = {"price": price, "valid_to": valid_to}
-    return data
+    s = requests_cache.CachedSession("datacache", expire_after=datetime.timedelta(minutes=25))
+    r = s.get(url, params=params)
 
+    # Data Cache Debug
+    if r.from_cache:
+        print("Data from cache")
+    else:
+        print("Data from API")
 
-# print(get_time_half_hour())
-get_price(apiURL, get_full_time())
+    # check for valid return
+    if r.status_code == 200:
+        json = r.json()
+        price: int = json["results"][0]["value_inc_vat"]
+        price: int = math.ceil(price)
+        valid_to: str = json["results"][0]["valid_to"]
+        data = {"pricedata": {"price": price, "valid_to": valid_to}}
+        return data
+    else:
+        data = {"code": r.status_code}
+        return data

@@ -1,1 +1,9 @@
 .venv
+.env
+
+
+
+# Cache/db files
+*.log
+*.sqlite3
+mysite/__pycache__
